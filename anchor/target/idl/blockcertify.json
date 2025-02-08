@@ -1,97 +1,43 @@
 {
-  "address": "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF",
+  "address": "2SrixAo9MU6axFWbkekKvPF2h6pgQSCPUdEmwpM6uYia",
   "metadata": {
     "name": "blockcertify",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Created with <3 by shri"
   },
   "instructions": [
     {
-      "name": "close",
+      "name": "create_certificate",
       "discriminator": [
-        98,
-        165,
-        201,
-        177,
-        108,
-        65,
-        206,
-        96
+        238,
+        189,
+        143,
+        29,
+        100,
+        80,
+        70,
+        10
       ],
       "accounts": [
         {
-          "name": "payer",
+          "name": "certificate",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "recipient_id"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
         },
         {
-          "name": "blockcertify",
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "decrement",
-      "discriminator": [
-        106,
-        227,
-        168,
-        59,
-        248,
-        27,
-        150,
-        101
-      ],
-      "accounts": [
-        {
-          "name": "blockcertify",
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "increment",
-      "discriminator": [
-        11,
-        18,
-        104,
-        9,
-        104,
-        174,
-        59,
-        33
-      ],
-      "accounts": [
-        {
-          "name": "blockcertify",
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initialize",
-      "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "blockcertify",
+          "name": "owner",
           "writable": true,
           "signer": true
         },
@@ -100,58 +46,178 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "recipient_id",
+          "type": "string"
+        },
+        {
+          "name": "recipient_name",
+          "type": "string"
+        },
+        {
+          "name": "program_name",
+          "type": "string"
+        },
+        {
+          "name": "institution_name",
+          "type": "string"
+        },
+        {
+          "name": "issued_date",
+          "type": "string"
+        }
+      ]
     },
     {
-      "name": "set",
+      "name": "revoke_certificate",
       "discriminator": [
-        198,
-        51,
-        53,
-        241,
-        116,
-        29,
-        126,
-        194
+        236,
+        5,
+        130,
+        119,
+        9,
+        164,
+        130,
+        122
       ],
       "accounts": [
         {
-          "name": "blockcertify",
-          "writable": true
+          "name": "certificate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "recipient_id"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "value",
-          "type": "u8"
+          "name": "_recipient_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_certificate",
+      "discriminator": [
+        235,
+        236,
+        67,
+        125,
+        170,
+        84,
+        113,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "certificate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "recipient_id"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_recipient_id",
+          "type": "string"
+        },
+        {
+          "name": "recipient_name",
+          "type": "string"
+        },
+        {
+          "name": "program_name",
+          "type": "string"
+        },
+        {
+          "name": "institution_name",
+          "type": "string"
         }
       ]
     }
   ],
   "accounts": [
     {
-      "name": "Blockcertify",
+      "name": "Certificate",
       "discriminator": [
-        255,
-        176,
-        4,
-        245,
-        188,
-        253,
-        124,
-        25
+        202,
+        229,
+        222,
+        220,
+        116,
+        20,
+        74,
+        67
       ]
     }
   ],
   "types": [
     {
-      "name": "Blockcertify",
+      "name": "Certificate",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "count",
-            "type": "u8"
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_id",
+            "type": "string"
+          },
+          {
+            "name": "recipient_name",
+            "type": "string"
+          },
+          {
+            "name": "program_name",
+            "type": "string"
+          },
+          {
+            "name": "institution_name",
+            "type": "string"
+          },
+          {
+            "name": "issued_date",
+            "type": "string"
           }
         ]
       }

@@ -2,69 +2,122 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
+declare_id!("2SrixAo9MU6axFWbkekKvPF2h6pgQSCPUdEmwpM6uYia");
 
 #[program]
 pub mod blockcertify {
     use super::*;
 
-  pub fn close(_ctx: Context<CloseBlockcertify>) -> Result<()> {
-    Ok(())
-  }
+    pub fn create_certificate(
+        ctx: Context<CreateCertificate>, 
+        recipient_id: String, 
+        recipient_name: String, 
+        program_name: String, 
+        institution_name: String, 
+        issued_date: String
+    ) -> Result<()> {
+        let certificate = &mut ctx.accounts.certificate;
+        certificate.owner = ctx.accounts.owner.key();
+        certificate.recipient_id = recipient_id;
+        certificate.recipient_name = recipient_name;
+        certificate.program_name = program_name;
+        certificate.institution_name = institution_name;
+        certificate.issued_date = issued_date;
 
-  pub fn decrement(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.blockcertify.count = ctx.accounts.blockcertify.count.checked_sub(1).unwrap();
-    Ok(())
-  }
+        Ok(())
+    }
 
-  pub fn increment(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.blockcertify.count = ctx.accounts.blockcertify.count.checked_add(1).unwrap();
-    Ok(())
-  }
+    pub fn update_certificate(
+        ctx: Context<UpdateCertificate>,  
+        _recipient_id: String, 
+        recipient_name: String, 
+        program_name: String, 
+        institution_name: String
+    ) -> Result<()> {
+        let certificate = &mut ctx.accounts.certificate;
+        certificate.recipient_name = recipient_name;
+        certificate.program_name = program_name;
+        certificate.institution_name = institution_name;
 
-  pub fn initialize(_ctx: Context<InitializeBlockcertify>) -> Result<()> {
-    Ok(())
-  }
+        Ok(())
+    }
 
-  pub fn set(ctx: Context<Update>, value: u8) -> Result<()> {
-    ctx.accounts.blockcertify.count = value.clone();
-    Ok(())
-  }
+    pub fn revoke_certificate(
+        _ctx: Context<RevokeCertificate>, 
+        _recipient_id: String
+    ) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
-pub struct InitializeBlockcertify<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
+#[instruction(recipient_id: String, recipient_name: String, program_name: String, institution_name: String, issued_date: String)]
+pub struct CreateCertificate<'info> {
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + Certificate::INIT_SPACE,
+        seeds = [recipient_id.as_bytes(), owner.key().as_ref()],
+        bump
+    )]
+    pub certificate: Account<'info, Certificate>,
 
-  #[account(
-  init,
-  space = 8 + Blockcertify::INIT_SPACE,
-  payer = payer
-  )]
-  pub blockcertify: Account<'info, Blockcertify>,
-  pub system_program: Program<'info, System>,
-}
-#[derive(Accounts)]
-pub struct CloseBlockcertify<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
+    #[account(mut)]
+    pub owner: Signer<'info>, 
 
-  #[account(
-  mut,
-  close = payer, // close account and return lamports to payer
-  )]
-  pub blockcertify: Account<'info, Blockcertify>,
+    pub system_program: Program<'info, System>
 }
 
 #[derive(Accounts)]
-pub struct Update<'info> {
-  #[account(mut)]
-  pub blockcertify: Account<'info, Blockcertify>,
+#[instruction(recipient_id: String, recipient_name: String, program_name: String, institution_name: String)]
+pub struct UpdateCertificate<'info> {
+    #[account(
+        mut,
+        seeds = [recipient_id.as_bytes(), owner.key().as_ref()],
+        bump
+    )]
+    pub certificate: Account<'info, Certificate>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>, 
+
+    pub system_program: Program<'info, System>
+}
+
+#[derive(Accounts)]
+#[instruction(recipient_id: String)]
+pub struct RevokeCertificate<'info> {
+    #[account(
+        mut,
+        seeds = [recipient_id.as_bytes(), owner.key().as_ref()],
+        close = owner,
+        bump
+    )]
+    pub certificate: Account<'info, Certificate>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    pub system_program: Program<'info, System>
 }
 
 #[account]
 #[derive(InitSpace)]
-pub struct Blockcertify {
-  count: u8,
+pub struct Certificate{
+    pub owner: Pubkey,
+
+    #[max_len(15)]
+    pub recipient_id: String,
+
+    #[max_len(25)]
+    pub recipient_name: String,
+    
+    #[max_len(50)]
+    pub program_name: String,
+
+    #[max_len(50)]
+    pub institution_name: String,
+
+    #[max_len(10)]
+    pub issued_date: String
 }
