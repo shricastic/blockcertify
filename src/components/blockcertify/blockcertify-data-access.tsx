@@ -1,104 +1,157 @@
-'use client'
+"use client";
 
-import { getBlockcertifyProgram, getBlockcertifyProgramId } from '@project/anchor'
-import { useConnection } from '@solana/wallet-adapter-react'
-import { Cluster, Keypair, PublicKey } from '@solana/web3.js'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import toast from 'react-hot-toast'
-import { useCluster } from '../cluster/cluster-data-access'
-import { useAnchorProvider } from '../solana/solana-provider'
-import { useTransactionToast } from '../ui/ui-layout'
+import {
+  getBlockcertifyProgram,
+  getBlockcertifyProgramId,
+} from "@project/anchor";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { Cluster, Keypair, PublicKey } from "@solana/web3.js";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import toast from "react-hot-toast";
+import { useCluster } from "../cluster/cluster-data-access";
+import { useAnchorProvider } from "../solana/solana-provider";
+import { useTransactionToast } from "../ui/ui-layout";
+
+interface CreateCertificateType {
+  owner: PublicKey;
+  recipient_id: string;
+  recipient_name: string;
+  program_name: string;
+  institution_name: string;
+  issued_date: string;
+}
 
 export function useBlockcertifyProgram() {
-  const { connection } = useConnection()
-  const { cluster } = useCluster()
-  const transactionToast = useTransactionToast()
-  const provider = useAnchorProvider()
-  const programId = useMemo(() => getBlockcertifyProgramId(cluster.network as Cluster), [cluster])
-  const program = useMemo(() => getBlockcertifyProgram(provider, programId), [provider, programId])
+  const { connection } = useConnection();
+  const { cluster } = useCluster();
+  const transactionToast = useTransactionToast();
+  const provider = useAnchorProvider();
+  const programId = useMemo(
+    () => getBlockcertifyProgramId(cluster.network as Cluster),
+    [cluster],
+  );
+  const program = useMemo(
+    () => getBlockcertifyProgram(provider, programId),
+    [provider, programId],
+  );
 
   const accounts = useQuery({
-    queryKey: ['blockcertify', 'all', { cluster }],
-    queryFn: () => program.account.blockcertify.all(),
-  })
+    queryKey: ["blockcertify", "all", { cluster }],
+    queryFn: () => program.account.certificate.all(),
+  });
 
   const getProgramAccount = useQuery({
-    queryKey: ['get-program-account', { cluster }],
+    queryKey: ["get-program-account", { cluster }],
     queryFn: () => connection.getParsedAccountInfo(programId),
-  })
+  });
 
-  const initialize = useMutation({
-    mutationKey: ['blockcertify', 'initialize', { cluster }],
-    mutationFn: (keypair: Keypair) =>
-      program.methods.initialize().accounts({ blockcertify: keypair.publicKey }).signers([keypair]).rpc(),
-    onSuccess: (signature) => {
-      transactionToast(signature)
-      return accounts.refetch()
+  const createCertificate = useMutation<string, Error, CreateCertificateType>({
+    mutationKey: ["blockcertify", "create-certificate", { cluster }],
+    mutationFn: async ({
+      recipient_id,
+      recipient_name,
+      program_name,
+      institution_name,
+      issued_date,
+      owner,
+    }) => {
+      const [certificateAccountAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(recipient_id), owner.toBuffer()],
+        programId,
+      );
+
+      return program.methods
+        .createCertificate(
+          recipient_id,
+          recipient_name,
+          program_name,
+          institution_name,
+          issued_date,
+        )
+        .accounts({ certificate: certificateAccountAddress })
+        .rpc();
     },
-    onError: () => toast.error('Failed to initialize account'),
-  })
+    onSuccess: (signature) => {
+      transactionToast(signature);
+      console.log("::::::::::Certificate Created::::::::", signature);
+      return accounts.refetch();
+    },
+    onError: () => toast.error("Failed to initialize account"),
+  });
 
   return {
     program,
     programId,
     accounts,
     getProgramAccount,
-    initialize,
-  }
+    createCertificate,
+  };
 }
 
-export function useBlockcertifyProgramAccount({ account }: { account: PublicKey }) {
-  const { cluster } = useCluster()
-  const transactionToast = useTransactionToast()
-  const { program, accounts } = useBlockcertifyProgram()
+export function useBlockcertifyProgramAccount({
+  account,
+}: {
+  account: PublicKey;
+}) {
+  const { cluster } = useCluster();
+  const transactionToast = useTransactionToast();
+  const { programId, program, accounts } = useBlockcertifyProgram();
 
   const accountQuery = useQuery({
-    queryKey: ['blockcertify', 'fetch', { cluster, account }],
-    queryFn: () => program.account.blockcertify.fetch(account),
-  })
+    queryKey: ["blockcertify", "fetch-certificate", { cluster, account }],
+    queryFn: () => program.account.certificate.fetch(account),
+  });
 
-  const closeMutation = useMutation({
-    mutationKey: ['blockcertify', 'close', { cluster, account }],
-    mutationFn: () => program.methods.close().accounts({ blockcertify: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accounts.refetch()
-    },
-  })
+  const updateCertificate = useMutation<string, Error, CreateCertificateType>({
+    mutationKey: ["blockcertify", "update-certificate", { cluster, account }],
+    mutationFn: async ({
+      recipient_id,
+      recipient_name,
+      program_name,
+      institution_name,
+      owner,
+    }) => {
+      const [certificateAccountAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(recipient_id), owner.toBuffer()],
+        programId,
+      );
 
-  const decrementMutation = useMutation({
-    mutationKey: ['blockcertify', 'decrement', { cluster, account }],
-    mutationFn: () => program.methods.decrement().accounts({ blockcertify: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+      return program.methods
+        .updateCertificate(
+          recipient_id,
+          recipient_name,
+          program_name,
+          institution_name,
+        )
+        .accounts({ certificate: certificateAccountAddress })
+        .rpc();
     },
-  })
+    onSuccess: (tx) => {
+      transactionToast(tx);
+      console.log("::::::Certificate Updated::::::", tx);
+      return accounts.refetch();
+    },
+  });
 
-  const incrementMutation = useMutation({
-    mutationKey: ['blockcertify', 'increment', { cluster, account }],
-    mutationFn: () => program.methods.increment().accounts({ blockcertify: account }).rpc(),
+  const revokeCertificate = useMutation({
+    mutationKey: ["blockcertify", "revoke-certificate", { cluster, account }],
+    mutationFn: async (recipient_id: string) =>
+      program.methods
+        .revokeCertificate(recipient_id)
+        .accounts({ certificate: account })
+        .rpc(),
     onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+      transactionToast(tx);
+      console.log("::::::Revoked Certificate::::::", tx);
+      return accounts.refetch();
     },
-  })
-
-  const setMutation = useMutation({
-    mutationKey: ['blockcertify', 'set', { cluster, account }],
-    mutationFn: (value: number) => program.methods.set(value).accounts({ blockcertify: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
-    },
-  })
+    onError: () => toast.error("Failed to update account"),
+  });
 
   return {
     accountQuery,
-    closeMutation,
-    decrementMutation,
-    incrementMutation,
-    setMutation,
-  }
+    updateCertificate,
+    revokeCertificate,
+  };
 }
