@@ -13,13 +13,21 @@ import { useCluster } from "../cluster/cluster-data-access";
 import { useAnchorProvider } from "../solana/solana-provider";
 import { useTransactionToast } from "../ui/ui-layout";
 
-interface CreateCertificateType {
-  owner: PublicKey;
+export interface CreateCertificateType {
+  owner: PublicKey | null;
   recipient_id: string;
   recipient_name: string;
   program_name: string;
   institution_name: string;
   issued_date: string;
+}
+
+export interface UpdateCertificateType{
+  owner: PublicKey | null;
+  recipient_id: string;
+  recipient_name: string;
+  program_name: string;
+  institution_name: string;
 }
 
 export function useBlockcertifyProgram() {
@@ -103,7 +111,7 @@ export function useBlockcertifyProgramAccount({
     queryFn: () => program.account.certificate.fetch(account),
   });
 
-  const updateCertificate = useMutation<string, Error, CreateCertificateType>({
+  const updateCertificate = useMutation<string, Error, UpdateCertificateType>({
     mutationKey: ["blockcertify", "update-certificate", { cluster, account }],
     mutationFn: async ({
       recipient_id,
